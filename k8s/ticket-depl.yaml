@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticket
+  template:
+    metadata:
+      labels:
+        app: ticket
+    spec:
+      containers:
+        - name: ticket
+          image: blbl21/ticket
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+            - name: ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ticket-mariadb-secret
+                  key: ROOT_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: ticket-mariadb-secret
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ticket-mariadb-secret
+                  key: DB_USER
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: ticket-mariadb-secret
+                  key: DB_HOST
+            - name: NATS_HOST
+              value: "http://nats-srv:4222"
+            - name: NATS_CLUSTER_ID
+              value: ticketing
+            - name: NATS_CLIENT_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-srv
+spec:
+  selector:
+    app: ticket
+  ports:
+    - name: ticket
+      protocol: TCP
+      port: 3000
+      targetPort: 3000

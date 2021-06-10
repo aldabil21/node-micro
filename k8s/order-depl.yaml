@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order
+  template:
+    metadata:
+      labels:
+        app: order
+    spec:
+      containers:
+        - name: order
+          image: blbl21/order
+          env:
+            - name: MONGO_URI
+              value: mongodb://order-mongo-srv:27017/orders
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+            - name: NATS_HOST
+              value: "http://nats-srv:4222"
+            - name: NATS_CLUSTER_ID
+              value: ticketing
+            - name: NATS_CLIENT_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-srv
+spec:
+  selector:
+    app: order
+  ports:
+    - name: order
+      protocol: TCP
+      port: 3000
+      targetPort: 3000

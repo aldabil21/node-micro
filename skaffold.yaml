@@ -1,0 +1,62 @@
+apiVersion: skaffold/v2beta14
+kind: Config
+metadata:
+  name: ticketing
+deploy:
+  kubectl:
+    manifests:
+      - ./k8s/*
+build:
+  local:
+    push: false
+  artifacts:
+    - image: blbl21/auth
+      context: auth
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .
+    - image: blbl21/ticket
+      context: ticket
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .
+    - image: blbl21/order
+      context: order
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .
+    - image: blbl21/expiration
+      context: expiration
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .
+    - image: blbl21/payment
+      context: payment
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .
+    - image: blbl21/client
+      context: client
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "**/*.tsx"
+            dest: .
+          - src: "**/*.css"
+            dest: .
