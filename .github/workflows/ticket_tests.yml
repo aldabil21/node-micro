@@ -3,18 +3,12 @@ on: pull_request
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      mariadb:
-        image: mariadb
-      env:
-        DB_USER: "root"
-        ROOT_PASSWORD: ""
-        DB_HOST: "localhost"
-        DB_NAME: "tickets"
-        JWT_SECRET: "ababababababbab"
-      ports:
-        - 3306
     steps:
+    - uses: getong/mariadb-action@v1.1
+      with:
+        mariadb version: '10.4.10'
+        mysql database: 'tickets'
+        mysql root password: ${{ secrets.RootPassword }}
       - uses: actions/checkout@v2
       - name: Ticket Service Tests
         run: cd ticket && npm install && npm run test:ci
