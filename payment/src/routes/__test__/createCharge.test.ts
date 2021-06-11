@@ -4,6 +4,7 @@ import request from "supertest";
 import { app } from "../../app";
 import { stripe } from "../../stripe";
 import { Payment } from "../../models/payment";
+import { PaymentCreatedPublisher } from "../../events/publisher/paymentCreated";
 
 it("Throws validation error", async () => {
   const { cookie, userId } = await global.jestSignin();
@@ -19,7 +20,7 @@ it("Throws validation error", async () => {
   await order.save();
 
   // Post charge
-  const fields = { order_id: "", token: "" };
+  const fields = { order_id: "", pi: "" };
   const res = await request(app)
     .post("/api/payment")
     .set("Cookie", cookie)
@@ -45,7 +46,7 @@ it("Cannot charge cancelled order", async () => {
   await order.save();
 
   // Post charge
-  const fields = { order_id: order.id, token: "sometoken" };
+  const fields = { order_id: order.id, pi: "somepi" };
   const res = await request(app)
     .post("/api/payment")
     .set("Cookie", cookie)
@@ -67,7 +68,7 @@ it("Cannot charge other users orders", async () => {
   await order.save();
 
   // Post charge
-  const fields = { order_id: order.id, token: "sometoken" };
+  const fields = { order_id: order.id, pi: "somepi" };
   const res = await request(app)
     .post("/api/payment")
     .set("Cookie", cookie)
@@ -76,7 +77,7 @@ it("Cannot charge other users orders", async () => {
 });
 
 jest.mock("../../stripe.ts");
-it("Charges successfully with stripe token", async () => {
+it("Get stripe intent from server on checkout", async () => {
   const { cookie, userId } = await global.jestSignin();
 
   // Mock create order
@@ -89,19 +90,22 @@ it("Charges successfully with stripe token", async () => {
   });
   await order.save();
 
-  // Post charge
-  const fields = { order_id: order.id, token: "tok_ae" };
+  // Get charge
+  const pi = "some_payment_intent";
   const res = await request(app)
-    .post("/api/payment")
+    .get(`/api/payment?order_id=${order.id}`)
     .set("Cookie", cookie)
-    .send(fields)
     .expect(201);
-  expect(stripe.charges.create).toHaveBeenCalled();
-  const data = stripe.charges.create as jest.Mock;
-  const args = data.mock.calls[0][0];
 
-  expect(args.amount).toEqual(order.total * 100);
-  expect(args.source).toEqual("tok_ae");
+  expect(stripe.paymentIntents.create).toHaveBeenCalled();
+
+  const data = stripe.paymentIntents.create as jest.Mock;
+  const args = data.mock.calls[0];
+  expect(args[0].amount).toEqual(order.total * 100);
+  expect(args[1].idempotencyKey).toEqual(order.id);
+
+  const result = await data.mock.results[0].value;
+  expect(result.data.intent).toEqual("client_secret");
 });
 
 it("Saves charge_id from stripe", async () => {
@@ -118,7 +122,8 @@ it("Saves charge_id from stripe", async () => {
   await order.save();
 
   // Post charge
-  const fields = { order_id: order.id, token: "tok_ae" };
+  const pi = "some_payment_intent";
+  const fields = { order_id: order.id, pi };
   const res = await request(app)
     .post("/api/payment")
     .set("Cookie", cookie)
@@ -128,5 +133,5 @@ it("Saves charge_id from stripe", async () => {
   const payment = await Payment.findOne({ order_id: order.id });
 
   expect(payment).not.toBeNull();
-  expect(payment?.charge_id).toEqual("some_charge_id");
+  expect(payment?.charge_id).toEqual(pi);
 });
