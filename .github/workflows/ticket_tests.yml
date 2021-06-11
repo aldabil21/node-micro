@@ -3,6 +3,17 @@ on: pull_request
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb
+      env:
+        DB_USER: "root"
+        ROOT_PASSWORD: ""
+        DB_HOST: "localhost"
+        DB_NAME: "tickets"
+        JWT_SECRET: "ababababababbab"
+      ports:
+        - 3306
     steps:
       - uses: actions/checkout@v2
       - name: Ticket Service Tests
