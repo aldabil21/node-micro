@@ -19,9 +19,7 @@ export const getStripeIntent = async (
     if (order?.status !== OrderStatus.Created) {
       throw new ErrorResponse(400, "Order has expired or not exist...");
     }
-
     // Stripe charge
-    console.log(Math.round(+order?.total * 100));
     const intent = await stripe.paymentIntents.create(
       {
         amount: Math.round(+order?.total * 100),
