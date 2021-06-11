@@ -4,9 +4,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: getong/mariadb-action@v1.1
-      with:
-        mariadb version: '10.4.10'
+      - uses: getong/mariadb-action@v1.1
+        with:
+          mariadb version: "10.4.10"
+          mysql database: "tickets"
       - uses: actions/checkout@v2
       - name: Ticket Service Tests
         run: cd ticket && npm install && npm run test:ci
