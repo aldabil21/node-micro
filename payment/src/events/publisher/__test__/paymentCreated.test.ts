@@ -21,7 +21,7 @@ it("Publish payment created event", async () => {
   await order.save();
 
   // Post charge
-  const fields = { order_id: order.id, token: "tok_ae" };
+  const fields = { order_id: order.id, pi: "some_payment_intent" };
   const res = await request(app)
     .post("/api/payment")
     .set("Cookie", cookie)
